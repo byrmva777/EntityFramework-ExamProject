@@ -1,119 +1,101 @@
 ﻿using SocialMedia.Project.DAL.Repositories.Concrate;
+using SocialMedia.Project.DAL.Repositories.Abstract;
 using SocialMedia.Project.Models.Entities.Concrate;
 using System;
 
-namespace SocialMedia.Project.Main 
+
+namespace SocialMedia.Project.Main
 {
     class Program
     {
-        private static object userRepository;
-        private static object commentRepository;
-        private static object postRepository;
 
+ 
         static void Main(string[] args)
         {
-
             using (var context = new SocialMediaDbContext())
             {
-
-                var userRepository = new BaseRepository<User>(context);
-                var userDetailsRepository = new BaseRepository<UserDetails>(context);
-                var postRepository = new BaseRepository<Post>(context);
-                var commentRepository = new BaseRepository<Comment>(context);
-
-
-
-                var userDetails = new UserDetails
+                using (var unitOfWork = new UnitOfWork(context))
                 {
-                    Name = "Aygun ",
-                    Surname = "Bayramova",
-                    Birthday = new DateTime(2004, 9, 4),
-                    Role = Role.User
-                };
+                    // Yeni UserDetails elave edek
+                    var userDetails = new UserDetails
+                    {
+                        Name = "Aygun",
+                        Surname = "Bayramova",
+                        Birthday = new DateTime(2004, 9, 4),
+                        Role = Role.User
+                    };
 
-                userDetailsRepository.Add(userDetails);
-                userDetailsRepository.SaveChanges();
-            };
+                    unitOfWork.UserDetails.Add(userDetails);
+                    unitOfWork.Complete();
 
-       
-//            Console.WriteLine("Melumatlar daxil edildi");
+                    Console.WriteLine("UserDetails daxil edildi");
 
-//            var newUser = new User
-//            {
-//                UserDetails = userDetails
-//            };
-//            //userRepository.Add(newUser);
-//            //userRepository.SaveChanges();
+                    // Yeni User elave edek
+                    var newUser = new User
+                    {
+                        UserDetails = userDetails
+                    };
 
+                    unitOfWork.Users.Add(newUser);
+                    unitOfWork.Complete();
+                    Console.WriteLine("User əlavə olundu");
 
-//            var newUser2 = new User
-//            {
-//                UserDetails = userDetails
-//            };
-//            //userRepository.Add(newUser2);
-//            //userRepository.SaveChanges();
+                    // Bütün istifadəçiləri gətirmək
+                    var users = unitOfWork.Users.GetAll();
+                    foreach (var user in users)
+                    {
+                        Console.WriteLine($"User ID: {user.Id}, Name: {user.UserDetails.Name}, Role: {user.UserDetails.Role}");
+                    }
 
-//            Console.WriteLine("User elave olundu");
+                    // İstifadeci yenilemek
+                    var userToUpdate = unitOfWork.Users.GetById(newUser.Id);
+                    if (userToUpdate != null)
+                    {
+                        userToUpdate.UserDetails.Name = "Sema";
+                        userToUpdate.UserDetails.Surname = "Bayramova";
+                        unitOfWork.Users.Update(userToUpdate.Id);
+                        unitOfWork.Complete();
+                        Console.WriteLine("User yenilendi");
+                    }
 
+                    // Yeni Post elave etmek
+                    var newPost = new Post
+                    {
+                        Text = "One of the best days in my life",
+                        LikeCount = 777,
+                        CreatedDate = DateTime.Now
+                    };
+                    unitOfWork.Posts.Add(newPost);
+                    unitOfWork.Complete();
+                    Console.WriteLine("Postunuz yuklendi");
 
-//            var users = userRepository.GetAll();
-//            foreach (var user in users)
-//            {
-//                Console.WriteLine($"User ID: {user.Id}, Name: {user.UserDetails.Name}, Role: {user.UserDetails.Role}");
-//            }
+                    // Butun postlari gostermek
+                    var posts = unitOfWork.Posts.GetAll();
+                    foreach (var post in posts)
+                    {
+                        Console.WriteLine($"Post ID: {post.Id}, Text: {post.Text}, Likes: {post.LikeCount}");
+                    }
 
+                    // Yeni Comment elave etmek
+                    var newComment = new Comment
+                    {
+                        Text = "!No Comment!",
+                        LikeCount = 777,
+                        PostId = newPost.Id,
+                        CreatedDate = DateTime.Now
+                    };
+                    unitOfWork.Comments.Add(newComment);
+                    unitOfWork.Complete();
+                    Console.WriteLine("Comment elave edildi!");
 
-//            var userToUpdate = userRepository.GetById(newUser.Id);
-//            if (userToUpdate != null)
-//            {
-//                userToUpdate.UserDetails.Name = "Sema";
-//                userToUpdate.UserDetails.Surname = "Bayramova";
-//                userRepository.Update(userToUpdate.Id);
-//                Console.WriteLine("Update olundu");
-//            }
-
-
-//            var newPost = new Post
-//            {
-//                Text = "One of the best day in my life",
-//                LikeCount = 777,
-//                CreatedDate = DateTime.Now
-//            };
-//            postRepository.Add(newPost);
-//            Console.WriteLine("Postunuz yuklendi");
-
-
-//            var posts = postRepository.GetAll();
-//            foreach (var post in posts)
-//            {
-//                Console.WriteLine($"Post ID: {post.Id}, Text: {post.Text}, Likes: {post.LikeCount}");
-//            }
-
-
-//            var newComment = new Comment
-//            {
-//                Text = "!No Comment!",
-//                LikeCount = 777,
-//                PostId = newPost.Id,
-//                CreatedDate = DateTime.Now
-//            };
-//            commentRepository.Add(newComment);
-//            Console.WriteLine("Komment elave edildi!");
-
-//            var comments = commentRepository.GetAll();
-//            foreach (var comment in comments)
-//            {
-//                Console.WriteLine($"Comment ID: {comment.Id}, Text: {comment.Text}, Likes: {comment.LikeCount}");
-//            }
-
+                    // Butun kommentleri gostermek
+                    var comments = unitOfWork.Comments.GetAll();
+                    foreach (var comment in comments)
+                    {
+                        Console.WriteLine($"Comment ID: {comment.Id}, Text: {comment.Text}, Likes: {comment.LikeCount}");
+                    }
+                }
+            }
         }
     }
 }
-
-
-
-
-
-
-
-
